@@ -1,74 +1,71 @@
-import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import "./index.scss";
+import Input from "../../components/Input";
 
-const Home = () => {
-  const [products, setProducts] = useState([]);
+const Edit = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [stock, setStock] = useState("");
+  const [status, setStatus] = useState(false);
+  const [image, setImage] = useState(null);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchProduct = async () => {
       try {
-        const response = await axios.get("http://localhost:3000/api/v4/product");
-        setProducts(response.data);
+        const response = await axios.get(`/api/v4/product/${id}`);
+        const { name, price, stock, status } = response.data;
+        setName(name);
+        setPrice(price);
+        setStock(stock);
+        setStatus(status);
       } catch (error) {
         console.error(error);
       }
     };
 
-    fetchProducts();
-  }, []);
+    fetchProduct();
+  }, [id]);
 
-  const handleDelete = async (id) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
     try {
-      await axios.delete(`http://localhost:3000/api/v4/product/${id}`);
-      console.log("Product deleted successfully");
-      fetchProducts();
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("price", price);
+      formData.append("stock", stock);
+      formData.append("status", status);
+      formData.append("image", image);
+
+      await axios.put(`/api/v4/product/${id}`, formData);
+      navigate(`/detail/${id}`);
+      console.log("Data berhasil diupdate");
     } catch (error) {
-      console.error(error);
+      console.log(error);
     }
   };
 
   return (
     <div className="main">
-      <Link to="/tambah" className="btn btn-primary">
-        Tambah Produk
-      </Link>
-      <div className="search">
-        <input type="text" placeholder="Masukkan kata kunci..." />
+      <div className="card">
+        <h2>Edit Produk</h2>
+        <br />
+        <form onSubmit={handleSubmit}>
+          <Input name="name" type="text" placeholder="Nama Produk..." label="Nama" value={name} onChange={(e) => setName(e.target.value)} />
+          <Input name="price" type="number" placeholder="Harga Produk..." label="Harga" value={price} onChange={(e) => setPrice(e.target.value)} />
+          <Input name="Stock" type="number" placeholder="Stock Produk..." label="Stock" value={stock} onChange={(e) => setStock(e.target.value)} />
+          <Input name="status" type="checkbox" label="Active" checked={status} onChange={(e) => setStatus(e.target.checked)} />
+          <input type="file" onChange={(e) => setImage(e.target.files[0])} />
+          <button type="submit" className="btn btn-primary">
+            Simpan
+          </button>
+        </form>
       </div>
-      <table className="table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th className="text-right">Price</th>
-            <th className="text-center">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {products.map((product) => (
-            <tr key={product._id}>
-              <td>{product._id}</td>
-              <td>{product.name}</td>
-              <td className="text-right">{product.price}</td>
-              <td className="text-center">
-                <Link to={`/detail/${product._id}`} className="btn btn-sm btn-info">
-                  Detail
-                </Link>
-                <Link to={`/edit/${product._id}`} className="btn btn-sm btn-warning">
-                  Edit
-                </Link>
-                <button className="btn btn-sm btn-danger" onClick={() => handleDelete(product._id)}>
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 };
 
-export default Home;
+export default Edit;
